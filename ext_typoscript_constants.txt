@@ -46,6 +46,12 @@ plugin.cwt_community {
   # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Guestbook: Icon used for deletion of items.
   file.icon_guestbook_delete = EXT:cwt_community/pi1/guestbook_delete.gif
 
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon used for adding a recipient.
+  file.icon_messages_recipient_add = EXT:cwt_community/pi1/messages_recipient_add.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon used for deleting a recipient.
+  file.icon_messages_recipient_delete = EXT:cwt_community/pi1/messages_recipient_delete.gif
+
   # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for new mail.
   file.icon_messages_new = EXT:cwt_community/pi1/messages_new.gif
 
@@ -57,6 +63,9 @@ plugin.cwt_community {
 
   # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for answering mail.
   file.icon_messages_answer = EXT:cwt_community/pi1/messages_answer.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for answering mail to all.
+  file.icon_messages_answer_all = EXT:cwt_community/pi1/messages_answer.gif
 
   # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Welcome: Icon indicating new mail.
   file.icon_welcome_newmail = EXT:cwt_community/pi1/welcome_newmail.gif
@@ -74,6 +83,9 @@ plugin.cwt_community {
 
   # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Messages: PID of the page containing the 'MESSAGES' plugin
   pid.messages = 80
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Messages Recipientsearch: PID of the page containing the 'MESSAGES - RECIPIENTSEARCH' plugin
+  pid.messages_recipientsearch = 82
 
   # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Icon Replacement: PID of Sysfolder, where the icon records (for replacement of strings) reside.
   pid.icons = 81

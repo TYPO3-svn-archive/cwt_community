@@ -35,11 +35,14 @@ plugin.tx_cwtcommunity_pi1{
 	icon_userlist_addbuddy = {$plugin.cwt_community.file.icon_userlist_addbuddy}
 	icon_userlist_male = {$plugin.cwt_community.file.icon_userlist_male}
 	icon_userlist_female = {$plugin.cwt_community.file.icon_userlist_female}
-	icon_guestbook_delete = {$plugin.cwt_community.file.icon_guestbook_delete}	
+	icon_guestbook_delete = {$plugin.cwt_community.file.icon_guestbook_delete}
+	icon_messages_recipient_add = {$plugin.cwt_community.file.icon_messages_recipient_add}
+	icon_messages_recipient_delete = {$plugin.cwt_community.file.icon_messages_recipient_delete}
 	icon_messages_new = {$plugin.cwt_community.file.icon_messages_new}	
 	icon_messages_unread = {$plugin.cwt_community.file.icon_messages_unread}	
 	icon_messages_read = {$plugin.cwt_community.file.icon_messages_read}
 	icon_messages_answer = {$plugin.cwt_community.file.icon_messages_answer}
+	icon_messages_answer_all = {$plugin.cwt_community.file.icon_messages_answer_all}
 	icon_welcome_newmail = {$plugin.cwt_community.file.icon_welcome_newmail}	
 	icon_welcome_nonewmail = {$plugin.cwt_community.file.icon_welcome_nonewmail}	
 	
@@ -47,6 +50,7 @@ plugin.tx_cwtcommunity_pi1{
 	pid_profile = {$plugin.cwt_community.pid.profile}
 	pid_buddylist = {$plugin.cwt_community.pid.buddylist}
 	pid_messages = {$plugin.cwt_community.pid.messages}
+	pid_messages_recipientsearch = {$plugin.cwt_community.pid.messages_recipientsearch}
 	pid_icons = {$plugin.cwt_community.pid.icons}
 	iconReplacement = {$plugin.cwt_community.iconReplacement}
 	maxIdleTime = {$plugin.cwt_community.maxIdleTime}

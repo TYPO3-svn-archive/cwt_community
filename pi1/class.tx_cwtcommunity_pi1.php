@@ -130,7 +130,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                 $content .= $this->getViewWelcome($user_info, $count);
             }
             elseif ($CODE == "MESSAGES") {
-                //Now check, if the user views his own guestbook
+                //Get the user id
                 $session_user_uid = $this->doGetLoggedInUserUID();
                 // Read the file
                 $this -> orig_templateCode = $this -> cObj -> fileResource($conf["template_messages"]);
@@ -159,14 +159,18 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                 }
                 elseif ($action == "getviewmessagesnew"){
                         //Get the recipient uid
+                        //can also contain multiple uids separated by comma
                         $recipient_uid = t3lib_div::GPvar("recipient_uid");
+				        if (empty($recipient_uid)) {
+				      		$recipient_uid = $this -> piVars["recipients_uids"];
+				        }
                         //Check if the user filled in all fields
                         $subject = htmlspecialchars($this->piVars["subject"]);
                         $body = htmlspecialchars($this->piVars["body"]);
                         //user wants to submit
                         if ($submitPressed != null){
                             //Everything ok, send the msg
-                           if ($subject != null && $body != null){
+                           if ($subject != null && $body != null && $recipient_uid != null){
                                //Send msg
                                $res = $this->doSendMessage($session_user_uid, $recipient_uid, $subject, $body);
                                //Display result view
@@ -182,14 +186,14 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                              //Check if the user wants to answer a mail
                              $answer_uid = t3lib_div::GPvar("answer_uid");
                              //User wants to answer
-                             if ($answer_uid != null){
+                             if ($answer_uid != null) {
                                 //Get the message from database
                                 $query = $this->doGetMessagesSingle($session_user_uid, $answer_uid);
                                 //Get the subject, of mail to answer
-								$subject = htmlspecialchars($this->pi_getLL('CWT_REPLY_ABBREV'));
+								$subject = htmlspecialchars($this->pi_getLL('CWT_REPLY_ABBREV')." ".$query["subject"]);
 
                                 //Get the bodytext
-                                $body = "\n-------------------------".$query["body"];
+                                $body = " \n-------------------------\n".$query["body"];
                              }
                              //Generate the view
                              $content .= $this->getViewMessagesNew($session_user_uid, $recipient_uid, $subject, $body);
@@ -203,6 +207,13 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                     //Generate the view
                     $content .= $this->getViewMessagesSingle($session_user_uid, $message);
                 }
+            }
+            elseif ($CODE == "MESSAGES_RECIPIENTSEARCH") {
+                //Get the user id
+                $session_user_uid = $this->doGetLoggedInUserUID();
+                // Read the file
+                $this -> orig_templateCode = $this -> cObj -> fileResource($conf["template_messages"]);
+				$content .= $this->getViewMessagesRecipientsearch($session_user_uid);
             }
 			elseif ($CODE == "GUESTBOOK") {
 				//Now check, if the user views his own guestbook
@@ -381,7 +392,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                     // Get letter
                     $letter = t3lib_div :: GPvar("letter");
                     // Get the model -> user
-                    $users = $this -> doGetUserlist($letter);
+                    $users = $this -> doGetUserlist($letter."%");
                     // Generate the view
                     $content .= $this -> getViewUserlist($users);
                 }
@@ -727,7 +738,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             // Create Marker Array
             $markerArray = array();
             $markerArray["###USERNAME###"] = $cObj -> stdWrap($guestbook[$i]['username'], "");
-            $markerArray["###SEX###"] = $this->doGetSexIcon($guestbook[$i]['uid']);			
+            $markerArray["###SEX###"] = $this->doGetSexIcon($guestbook[$i]['cruser_id']);			
             $markerArray["###CREATION_DATE###"] = $cObj -> stdWrap($creationDate, "");
             $markerArray["###CREATION_TIME###"] = $cObj -> stdWrap($creationTime, "");
             $markerArray["###TEXT###"] = $cObj -> stdWrap($this->parseIcons($guestbook[$i]['text']), "");
@@ -1087,7 +1098,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             // Create Marker Array
             $markerArray = array();
             $markerArray["###USERNAME###"] = $cObj -> stdWrap($buddylist[$i]['username'], "");
-	        $markerArray["###SEX###"] = $this->doGetSexIcon($buddylist[$i]['uid']);					
+	        $markerArray["###SEX###"] = $this->doGetSexIcon($buddylist[$i]['buddy_uid']);					
             $markerArray["###STATUS###"] = $status;
             $markerArray["###LINK_TO_PROFILE###"] = $cObj -> stdWrap($linkToProfile, "");
             $markerArray["###LINK_TO_DELETE_ITEM###"] = $cObj -> stdWrap($linkToDeleteItem, "");
@@ -1136,6 +1147,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $subSub_1_alt = "RECORD_ALT";		
         $subSub_2 = "ADDITIONAL";
 
+        $session_user_uid = $this->doGetLoggedInUserUID();
 
         // Get the html source between subpart markers from template file
         $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
@@ -1159,6 +1171,15 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             //Get new message and message icon
             $messages_answer = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessagesnew", "recipient_uid" => $messages[$i]['cruser_id'], "answer_uid" =>$messages[$i]['uid']));
             $messages_answer_icon = $this -> cObj -> cImage($this -> conf["icon_messages_answer"], array("alttext" => $this->pi_getLL("icon_messages_answer")));
+			if (!empty($messages[$i]['recipients_to'])) {
+				$recipients_array = array_merge(array($messages[$i]['cruser_id']), explode(',', $messages[$i]['recipients_to']));
+				$recipients_array = array_diff($recipients_array, array($session_user_uid));
+            	$recipients = implode(',', $recipients_array);
+           	} else {
+            	$recipients = $messages[$i]['cruser_id'];
+        	}
+            $messages_answer_all = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessagesnew", "recipient_uid" => $recipients, "answer_uid" =>$messages[$i]['uid']));
+            $messages_answer_all_icon = $this -> cObj -> cImage($this -> conf["icon_messages_answer_all"], array("alttext" => $this->pi_getLL("icon_messages_answer_all")));
 
             //Delete Icon
             $delete_icon = $this->cObj->cImage($this->conf['icon_guestbook_delete'], array("alttext" => $this->pi_getLL("icon_messages_delete")));
@@ -1175,8 +1196,9 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             // Create Marker Array
             $markerArray = array();
             $markerArray["###USERNAME###"] = $cObj -> stdWrap($messages[$i]['username'], "");
-            $markerArray["###SEX###"] = $this->doGetSexIcon($messages[$i]['uid']);			
-            $markerArray["###DATE###"] = $cObj -> stdWrap(date("d.m.Y", $messages[$i]['crdate']), "");
+            $markerArray["###NAME###"] = $cObj -> stdWrap($messages[$i]['name'], "");
+            $markerArray["###SEX###"] = $this->doGetSexIcon($messages[$i]['cruser_id']);			
+            $markerArray["###DATE###"] = $cObj -> stdWrap(date($this->pi_getLL('CWT_DATE_FORMAT').", ".$this->pi_getLL('CWT_TIME_FORMAT'), $messages[$i]['crdate']), "");
             $markerArray["###SUBJECT###"] = $cObj -> stdWrap($messages[$i]['subject'], "");
             $markerArray["###STATUS_ICON###"] = $cObj -> stdWrap($status_icon, "");
             $markerArray["###LINK_TO_PROFILE###"] = $cObj -> stdWrap($linkToProfile, "");
@@ -1185,6 +1207,8 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             $markerArray["###DELETE_ICON###"] = $cObj -> stdWrap($delete_icon, "");
             $markerArray["###LINK_TO_MESSAGESANSWER###"] = $cObj -> stdWrap($messages_answer, "");
             $markerArray["###MESSAGESANSWERICON###"] = $cObj -> stdWrap($messages_answer_icon, "");
+            $markerArray["###LINK_TO_MESSAGESANSWERALL###"] = $cObj -> stdWrap($messages_answer_all, "");
+            $markerArray["###MESSAGESANSWERALLICON###"] = $cObj -> stdWrap($messages_answer_all_icon, "");
 
             // Substitute the markers in the given sub sub part.
 			if ($switch) {
@@ -1217,6 +1241,16 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         // Substitute the template code with the given subpartcontent.
         $templateCode = $this -> cObj -> substituteSubpart($templateCode, $subSub_2, $subpartContent);
 
+        $markerArray = array();
+        //Get new message and message icon
+        $messages_add = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessagesnew"));
+        $messages_icon = $this -> cObj -> cImage($this -> conf["icon_messages_new"], array("alttext" => $this->pi_getLL("icon_messages_new")));
+
+        $markerArray["###LINK_TO_MESSAGESADD###"] = $cObj -> stdWrap($messages_add, "");
+        $markerArray["###MESSAGESICON###"] = $cObj -> stdWrap($messages_icon, "");
+		$markerArray["###NEWMSG_TEXT###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_NEW')), "");
+        $templateCode = $cObj -> substituteMarkerArray($templateCode, $markerArray);
+
         // Return the generated content
         $content = $templateCode;
         return $content;
@@ -1239,6 +1273,8 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $conf["subpartMarker"] = "VIEW_MESSAGES_SINGLE"; //Holds a subpart marker.
         $subSub_1 = "RECORD";
         $subSub_2 = "ADDITIONAL";
+        
+        $session_user_uid = $this->doGetLoggedInUserUID();
 
         // Get the html source between subpart markers from template file
         $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
@@ -1260,13 +1296,27 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Get new message and message icon
         $messages_answer = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessagesnew", "recipient_uid" => $message['cruser_id'], "answer_uid" =>$message['uid']));
         $messages_answer_icon = $this -> cObj -> cImage($this -> conf["icon_messages_answer"], array("alttext" => $this->pi_getLL("icon_messages_answer")));
+		if (!empty($message['recipients_to'])) {
+			$recipients_array = array_merge(array($message['cruser_id']), explode(',', $message['recipients_to']));
+			$recipients_array = array_diff($recipients_array, array($session_user_uid));
+        	$recipients = implode(',', $recipients_array);
+       	} else {
+        	$recipients = $message['cruser_id'];
+    	}
+        $messages_answer_all = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessagesnew", "recipient_uid" => $recipients, "answer_uid" =>$message['uid']));
+        $messages_answer_all_icon = $this -> cObj -> cImage($this -> conf["icon_messages_answer_all"], array("alttext" => $this->pi_getLL("icon_messages_answer_all")));
 
         // Create Marker Array
         $markerArray = array();
 		$markerArray["###FROM_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_FROM')), ""); # mher
         $markerArray["###USERNAME###"] = $cObj -> stdWrap($message['username'], "");
-		$markerArray["###DATE_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_DATE')), ""); # mher
-        $markerArray["###DATE###"] = $cObj -> stdWrap(date($this->pi_getLL('CWT_DATE_FORMAT'), $message['crdate']), "");
+        $markerArray["###NAME###"] = $cObj -> stdWrap($message['name'], "");
+        $markerArray["###SEX###"] = $this->doGetSexIcon($message['cruser_id']);
+		$markerArray["###TO_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_TO')), ""); # mher
+        $markerArray["###RECIPIENTS_TO_USERNAME###"] = $cObj -> stdWrap($message['recipients_to_username'], "");
+        $markerArray["###RECIPIENTS_TO_NAME###"] = $cObj -> stdWrap($message['recipients_to_name'], "");
+        $markerArray["###DATE_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_DATE')), ""); # mher
+        $markerArray["###DATE###"] = $cObj -> stdWrap(date($this->pi_getLL('CWT_DATE_FORMAT').", ".$this->pi_getLL('CWT_TIME_FORMAT'), $message['crdate']), "");
 		$markerArray["###SUBJECT_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_SUBJECT')), ""); # mher
         $markerArray["###SUBJECT###"] = $cObj -> stdWrap($message['subject'], "");
 		$markerArray["###BODY_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_BODY')), ""); # mher
@@ -1280,6 +1330,9 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $markerArray["###LINK_TO_MESSAGESANSWER###"] = $cObj -> stdWrap($messages_answer, "");
         $markerArray["###MESSAGESANSWERICON###"] = $cObj -> stdWrap($messages_answer_icon, "");
 		$markerArray["###ANSWER_TEXT###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_ANSWER')), ""); # mher
+        $markerArray["###LINK_TO_MESSAGESANSWERALL###"] = $cObj -> stdWrap($messages_answer_all, "");
+        $markerArray["###MESSAGESANSWERALLICON###"] = $cObj -> stdWrap($messages_answer_all_icon, "");
+		$markerArray["###ANSWER_ALL_TEXT###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_ANSWER_ALL')), ""); # mher
 
         // Substitute the markers in the given sub sub part.
         $subpartContent .= $cObj -> substituteMarkerArray($cObj -> getSubpart($templateCode, "###" . $subSub_1 . "###"), $markerArray);
@@ -1314,13 +1367,17 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         // Get the html source between subpart markers from template file
         $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
 
+        $session_user_uid = $this->doGetLoggedInUserUID();
+
         /*
         * HANDLE EDIT
         */
         // Init subpart content
         $subpartContent = null;
         // Generate HTML
-        $form_action = $this -> pi_getPageLink($GLOBALS['TSFE'] -> id, "_self", array("action" => "getviewmessagesnew", "uid" => $uid, "recipient_uid" => $recipient_uid));
+        $form_action = $this -> pi_getPageLink($GLOBALS['TSFE'] -> id, "_self", array("action" => "getviewmessagesnew", "uid" => $uid));
+		$form_name = $this -> prefixId . "_form";
+		$form_recipients_uids_name = $this -> prefixId . "[recipients_uids]";
         $form_subject_name = $this -> prefixId . "[subject]";
         //Check, if this is an answer
         if ($subject == null && $body == null){
@@ -1338,9 +1395,110 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $form_cancel_button_name = $this -> prefixId . "[cancel_button]";
         $form_cancel_button_value = htmlspecialchars($this -> pi_getLL("FORM_CANCEL_BUTTON"));
         $form_errormsg = $errormsg;
+        
+        $form_modifyform_name = $this -> prefixId . "[modifyform]";
+        $form_javascript = "";
+        
+      	$recipients = explode(',', $recipient_uid);
+
+		// check modifyform: should a recipient be deleted?
+        $delrecipient_submitprefix = "delrecipient_";
+        if ( !empty($this -> piVars["modifyform"]) &&
+            (substr($this -> piVars["modifyform"], 0, strlen($delrecipient_submitprefix)) == $delrecipient_submitprefix)
+           ) {
+        	$removethis = substr($this -> piVars["modifyform"], strlen($delrecipient_submitprefix));
+        	$recipients = array_diff($recipients, array($removethis));
+        }
+        
+		// check modifyform: should a recipient be added?
+        $addrecipient_submitprefix = "addrecipient_";
+        if ( !empty($this -> piVars["modifyform"]) &&
+            (substr($this -> piVars["modifyform"], 0, strlen($addrecipient_submitprefix)) == $addrecipient_submitprefix)
+           ) {
+        	$addthis = substr($this -> piVars["modifyform"], strlen($addrecipient_submitprefix));
+        	$recipients[] = $addthis;
+        }
+    
+    	// clean the array
+        $recipients = array_unique($recipients);
+        foreach ($recipients as $key => $value) {
+        	// is this a group?
+        	if (substr($value, 0, 1) == 'G') {
+        		if (((int) substr($value, 1)) <= 0) {
+        			unset($recipients[$key]);
+        		}
+        	} else {
+        		if (((int) $value) <= 0) {
+        			unset($recipients[$key]);
+        		}
+        	}
+        }
+		// no email to self
+		$recipients = array_diff($recipients, array($session_user_uid));
+    
+        // Create Marker Array
+        $markerArray = array();
+        // Substitute the markers in the given sub sub sub part.
+		$templateCodeSub = $cObj -> getSubpart($templateCode, "###" . $subSub_1 . "###");
+        $subSub_2 = "FORM_RECIPIENTS_LIST";
+		$templateCodeSubSub = $cObj -> getSubpart($templateCodeSub, "###" . $subSub_2 . "###");
+		$subpartContentRecipientsList = "";
+
+		$form_javascript .="function " .$this -> prefixId.'_del_reci($recipient) {' .
+				$form_name.".elements['".$form_modifyform_name."'].value='".$delrecipient_submitprefix.'\'+$recipient; '.$form_name.".submit(); return false;" .
+				"}";
+		$form_javascript .="function " .$this -> prefixId.'_add_reci($recipient) {' .
+				$form_name.".elements['".$form_modifyform_name."'].value='".$addrecipient_submitprefix.'\'+$recipient; '.$form_name.".submit(); return false;" .
+				"}";
+
+
+		$recipient_add_popup_url = $this -> pi_getPageLink($this -> conf['pid_messages_recipientsearch'], "");
+		$form_javascript .="function " .$this -> prefixId.'_add_reci_popup() {' .
+				"window.open('".$recipient_add_popup_url."', 'AddRecipients', 'width=600,height=400,resizable=yes,scrollbars=yes'); return true;" .
+				"}";
+
+        $delete_icon = $this->cObj->cImage($this->conf['icon_messages_recipient_delete'], array("alttext" => $this->pi_getLL("icon_messages_recipient_delete")));
+		$markerArray["###DELETE_ICON###"] = $cObj -> stdWrap($delete_icon, "");
+        foreach ($recipients as $curr_recipient) {
+        	$delete_onclick = "return ".$this -> prefixId."_del_reci('".$curr_recipient."');";
+			// is this a group-ID?
+			if (substr($curr_recipient, 0, 1) == 'G') {
+				$groupinfo = $this -> doGetGroup(substr($curr_recipient, 1));
+				$userinfo = array('username' => $groupinfo['title'], 'name' => $groupinfo['title']);
+			} else {
+				$userinfo = $this -> doGetUser($curr_recipient);
+			}
+			$markerArray["###USERNAME###"] = $cObj -> stdWrap($userinfo['username'], "");
+			$markerArray["###NAME###"] = $cObj -> stdWrap($userinfo['name'], "");
+			$markerArray["###ID###"] = $cObj -> stdWrap($curr_recipient, "");
+			$markerArray["###DELETE_ONCLICK###"] = $cObj -> stdWrap($delete_onclick, "");
+			
+			if (!empty($subpartContentRecipientsList)) {
+				$subpartContentRecipientsList .= ", ";
+			}
+			$subpartContentRecipientsList .= $cObj -> substituteMarkerArray($templateCodeSubSub, $markerArray);
+        }
+        $templateCode = $this -> cObj -> substituteSubpart($templateCode, $subSub_2, $subpartContentRecipientsList);
+
+		// wrap JavaScript if there is any
+		if (!empty($form_javascript)) {
+			$form_javascript = '<script language="JavaScript">'.$form_javascript.'</script>';
+		}
+
+       	$recipient_add_onclick = "return ".$this -> prefixId.'_add_reci_popup();';
+        $recipient_add_icon = $this->cObj->cImage($this->conf['icon_messages_recipient_add'], array("alttext" => $this->pi_getLL("icon_messages_recipient_add")));
         // Create Marker Array
         $markerArray = array();
         $markerArray["###FORM_ACTION###"] = $cObj -> stdWrap($form_action, "");
+        $markerArray["###FORM_NAME###"] = $cObj -> stdWrap($form_name, "");
+        $markerArray["###FORM_JAVASCRIPT###"] = $form_javascript;
+        $markerArray["###FORM_MODIFYFORM_NAME###"] = $cObj -> stdWrap($form_modifyform_name, "");
+		$markerArray["###FORM_RECIPIENTS_UIDS_NAME###"] = $cObj -> stdWrap($form_recipients_uids_name, "");
+		$markerArray["###FORM_RECIPIENTS_UIDS_VALUE###"] = $cObj -> stdWrap(implode(',', $recipients), "");
+		$markerArray["###FORM_RECIPIENTS_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_RECIPIENTS')), "");  # mher
+		$markerArray["###FORM_RECIPIENTS_ADD_ONCLICK###"] = $cObj->stdWrap($recipient_add_onclick, "");
+		$markerArray["###FORM_RECIPIENTS_ADD_ICON###"] = $cObj->stdWrap($recipient_add_icon, "");
+		$markerArray["###FORM_RECIPIENTS_ADD_TEXT###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL("icon_messages_recipient_add")), "");
 		$markerArray["###FORM_SUBJECT_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_SUBJECT')), "");  # mher
         $markerArray["###FORM_SUBJECT_NAME###"] = $cObj -> stdWrap($form_subject_name, "");
         $markerArray["###FORM_SUBJECT_VALUE###"] = $cObj -> stdWrap($form_subject_value, "");
@@ -1401,6 +1559,174 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $content = $templateCode;
         return $content;
     }
+
+    /* getViewMessagesRecipientsearch($session_user_uid)
+    *
+    *  Displays a page for searching and adding recipients for message
+    *
+    *  @param fe user uid
+    *  @return String The generated HTML source for this view.
+    */
+    function getViewMessagesRecipientsearch($session_user_uid)
+	{
+        // Init Vars
+        $content = "";
+        $cObj = $this -> cObj; //Holds a typo content object
+        $templateCode = null; //Hold the template source code.
+        $conf["subpartMarker"] = "VIEW_MESSAGES_RECIPIENTSEARCH"; //Holds a subpart marker.
+        $subSub_1_1 = "SUBPART_GROUPDROPDOWN";
+        $subSub_1_1_1 = "RECORD";
+        $subSub_1_2 = "RECORD_USERSEARCH";
+        $subSub_1_2_alt = "RECORD_USERSEARCH_ALT";		
+        $subSub_2_1 = "ADDITIONAL1";
+        $subSub_2_2 = "ADDITIONAL2";
+        $max_searchresults = 50;
+        $note_msg = "";
+
+
+        // Get the html source between subpart markers from template file
+        $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
+
+
+		$form_name = $this -> prefixId . "_form";
+        $form_modifyform_name = $this -> prefixId . "[modifyform]";
+        $form_javascript = "";
+        $addrecipient_submitprefix = "addrecipient_";
+
+		$form_javascript .="function " .$this -> prefixId.'_add_reci($recipient) {' .
+				"window.opener.document.".$form_name.".elements['".$form_modifyform_name."'].value='".$addrecipient_submitprefix.'\'+$recipient; window.opener.document.'.$form_name.".submit(); return false;" .
+				"}";
+
+
+		/*** GROUPS ***/
+
+        /*
+        * HANDLE RECORD
+        */
+        // Init subpart content
+        $subpartContent = null;
+
+		$subpartGroupdropdown = $cObj -> getSubpart($templateCode, "###" . $subSub_1_1 . "###");
+
+        $recipients = $this -> doGetGrouplist();
+        foreach ($recipients as $curr_recipient) {
+            // Create Marker Array
+            $markerArray = array();
+            $markerArray["###NAME###"] = $cObj -> stdWrap(htmlspecialchars($curr_recipient['title']), "");
+            $markerArray["###UID###"] = $cObj -> stdWrap($curr_recipient['uid'], "");
+
+            // Substitute the markers in the given sub sub part.
+		    $switch = false;
+            $subpartContent .= $cObj -> substituteMarkerArray($cObj -> getSubpart($subpartGroupdropdown, "###" . $subSub_1_1_1 . "###"), $markerArray);
+        }
+        // Substitute the template code with the given subpartcontent.
+        $subpartGroupdropdown = $this -> cObj -> substituteSubpart($subpartGroupdropdown, $subSub_1_1_1, $subpartContent);
+
+        // Create Marker Array
+        $markerArray = array();
+
+		$form_groupdropdown_name = $this -> prefixId . "_groupdropdown_form";
+        $dropdown_name = $this -> prefixId . "_groupdropdown";
+       	$recipient_add_onclick = "return ".$this -> prefixId."_add_reci('G'+".$form_groupdropdown_name.".".$dropdown_name.".options[".$form_groupdropdown_name.".".$dropdown_name.".selectedIndex].value);";
+        $recipient_add_icon = $this->cObj->cImage($this->conf['icon_messages_recipient_add'], array("alttext" => $this->pi_getLL("icon_messages_recipient_add_this")));
+
+        $markerArray["###GROUP_HEADER###"] = $cObj -> stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_GROUP')), ""); # mher
+
+        $markerArray["###FORM_GROUPDROPDOWN_NAME###"] = $cObj -> stdWrap($form_groupdropdown_name, "");
+        $markerArray["###DROPDOWN_NAME###"] = $cObj -> stdWrap($dropdown_name, "");
+        $markerArray["###ADD_ONCLICK###"] = $cObj -> stdWrap($recipient_add_onclick, "");
+        $markerArray["###ADD_ICON###"] = $cObj -> stdWrap($recipient_add_icon, "");
+
+        $subpartGroupdropdown = $cObj -> substituteMarkerArray($subpartGroupdropdown, $markerArray);
+
+        $templateCode = $this -> cObj -> substituteSubpart($templateCode, $subSub_1_1, $subpartGroupdropdown);
+
+
+
+		/*** USERS ***/
+
+        /*
+        * HANDLE RECORD
+        */
+        // Init subpart content
+        $subpartContent = null;
+
+		//Switch for alternating colors
+		$switch = true;
+		
+        $recipients = array();
+        if (isset($this -> piVars['usersearch']) && (!empty($this -> piVars['usersearch']))) {
+        	$recipients = $this -> doGetUserlist("%" . $this -> piVars['usersearch'] . "%");
+        	$too_many = (count($recipients) > $max_searchresults);
+        	if ($too_many) {
+        		array_splice($recipients, $max_searchresults);
+        		$note_msg = $this->pi_getLL("CWT_MESSAGES_TOO_MANY_SEARCHRESULTS");
+        	}
+	        foreach ($recipients as $curr_recipient) {
+		       	$recipient_add_onclick = "return ".$this -> prefixId."_add_reci('".$curr_recipient['uid']."');";
+		        $recipient_add_icon = $this->cObj->cImage($this->conf['icon_messages_recipient_add'], array("alttext" => $this->pi_getLL("icon_messages_recipient_add_this")));
+	
+	            // Create Marker Array
+	            $markerArray = array();
+	            $markerArray["###NAME###"] = $cObj -> stdWrap(htmlspecialchars($curr_recipient['name']), "");
+	            $markerArray["###ADD_ONCLICK###"] = $cObj -> stdWrap($recipient_add_onclick, "");
+	            $markerArray["###ADD_ICON###"] = $cObj -> stdWrap($recipient_add_icon, "");
+	
+	            // Substitute the markers in the given sub sub part.
+				if ($switch) {
+				    $switch = false;
+		            $subpartContent .= $cObj -> substituteMarkerArray($cObj -> getSubpart($templateCode, "###" . $subSub_1_2 . "###"), $markerArray);
+				}
+				else{
+					$switch = true;			
+		            $subpartContent .= $cObj -> substituteMarkerArray($cObj -> getSubpart($templateCode, "###" . $subSub_1_2_alt . "###"), $markerArray);				
+				}
+	        }
+        }
+        // Substitute the template code with the given subpartcontent.
+		$templateCode = $this -> cObj -> substituteSubpart($templateCode, $subSub_1_2_alt, "");
+        $templateCode = $this -> cObj -> substituteSubpart($templateCode, $subSub_1_2, $subpartContent);
+
+
+        /*
+		* HANDLE ADDITIONAL mher
+		*/
+        // Init subpart content
+        $subpartContent = null;
+        // Create Marker Array
+        $markerArray = array();
+        $usersearch_name = $this -> prefixId . "[usersearch]";
+        $markerArray["###USER_HEADER###"] = $cObj -> stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_USER')), ""); # mher
+        $markerArray["###FORM_USER_SEARCH_ACTION###"] = $this -> pi_getPageLink($this -> conf['pid_messages_recipientsearch'], "");
+        $markerArray["###USER_SEARCH_NAME###"] = $cObj -> stdWrap($usersearch_name, "");
+        $markerArray["###USER_SEARCH_BUTTON_LABEL###"] = $cObj -> stdWrap(htmlspecialchars($this->pi_getLL('FORM_SEARCH_BUTTON')), "");
+        if (!empty($note_msg)) {
+        	$markerArray["###USER_SEARCH_NOTE_MSG###"] = $cObj -> stdWrap(htmlspecialchars($note_msg), "");
+       	} else {
+        	$markerArray["###USER_SEARCH_NOTE_MSG###"] = "";
+    	}
+        // Substitute the markers in the given sub sub part.
+        $subpartContent .= $cObj -> substituteMarkerArray($cObj -> getSubpart($templateCode, "###" . $subSub_2_2 . "###"), $markerArray);
+        // Substitute the template code with the given subpartcontent.
+        $templateCode = $this -> cObj -> substituteSubpart($templateCode, $subSub_2_2, $subpartContent);
+     
+
+
+
+		// wrap JavaScript if there is any
+		if (!empty($form_javascript)) {
+			$form_javascript = '<script language="JavaScript">'.$form_javascript.'</script>';
+		}
+
+        $markerArray = array();
+        $markerArray["###FORM_JAVASCRIPT###"] = $form_javascript;
+        $templateCode = $cObj -> substituteMarkerArray($templateCode, $markerArray);
+
+        // Return the generated content
+        $content = $templateCode;
+
+        return $content;
+	}
 
     /* getViewWelcome($user_info, $count)
     *
@@ -1466,23 +1792,45 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         return $content;
     }
 
-    /* doGetUserlist($letter)
+    /* doGetUserlist($search)
 	*
 	*  Gets information about frontend users.
 	*
-	*  @param $letter Only displays usernames with this as first letter.
+	*  @param $search Only return usernames matching an SQL search string.
 	*  @return Array of tx_cwtcommunity_pi1_user records.
 	*/
-    function doGetUserlist($letter)
+    function doGetUserlist($search = null)
     {
         // fetch all by default
-        if ($letter == null) {
+        if ($search == null) {
             // Fetch users
             $users = $this -> doDatabaseQuery("SELECT uid, username, name, city, country, www FROM fe_users WHERE pid = ".$this->sysfolderList." AND NOT deleted=1 AND NOT disable=1 ORDER BY username ASC");
         }
         else{
             // Fetch users
-            $users = $this -> doDatabaseQuery("SELECT uid, username, name, city, country, www FROM fe_users WHERE pid = ".$this->sysfolderList." AND (username LIKE '" . $letter . "%' OR username LIKE '" . strtoupper($letter) . "%') AND NOT deleted=1 AND NOT disable=1 ORDER BY username ASC");
+            $users = $this -> doDatabaseQuery("SELECT uid, username, name, city, country, www FROM fe_users WHERE pid = ".$this->sysfolderList." AND (username LIKE '" . mysql_escape_string($search) . "' OR username LIKE '" . strtoupper($search) . "') AND NOT deleted=1 AND NOT disable=1 ORDER BY username ASC");
+        }
+        // Return
+        return $users;
+    }
+
+    /* doGetGrouplist($search)
+	*
+	*  Gets information about frontend users.
+	*
+	*  @param $search Only return groups matching an SQL search string.
+	*  @return Array of tx_cwtcommunity_pi1_group records.
+	*/
+    function doGetGrouplist($search = null)
+    {
+        // fetch all by default
+        if ($search == null) {
+            // Fetch users
+            $users = $this -> doDatabaseQuery("SELECT uid, title FROM fe_groups WHERE pid = ".$this->sysfolderList." AND NOT deleted=1 ORDER BY title ASC");
+        }
+        else{
+            // Fetch users
+            $users = $this -> doDatabaseQuery("SELECT uid, title FROM fe_groups WHERE pid = ".$this->sysfolderList."  (title LIKE '" . mysql_escape_string($search) . "' OR title LIKE '" . strtoupper($letter) . "') AND NOT deleted=1 ORDER BY title ASC");
         }
         // Return
         return $users;
@@ -1506,6 +1854,28 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         return $temp;
     }
 
+    /* doGetGroup($fe_groups_uid=null)
+	*
+	*  Fetches information about an fe group with a specified uid.
+	*
+	*  @param $fe_groups_uid Valid uid from 'fe_groups'
+	*  @return Array
+	*/
+    function doGetGroup($fe_groups_uid = null)	{
+        // Fetch user
+        $temp = array();
+        if (!empty($fe_groups_uid)) {
+	        $user = $this -> doDatabaseQuery("SELECT * FROM fe_groups WHERE uid = ".$fe_groups_uid);
+	        $keys = array_keys($user[0]);
+	        // Create return array
+	        for ($i = 0;$i < sizeof($user[0]);$i++) {
+	            $temp[$keys[$i]] = $user[0][$keys[$i]];
+	        }
+        }
+        // Return
+        return $temp;
+    }
+
     /* doGetUser($fe_users_uid=null)
 	*
 	*  Fetches information about an fe user with a specified uid.
@@ -1516,8 +1886,8 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     function doGetUser($fe_users_uid = null)	{
         // Fetch user
         $temp = array();
-        if (!empty($fe_users_id)) {
-	        $user = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = $fe_users_uid");
+        if (!empty($fe_users_uid)) {
+	        $user = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = ".$fe_users_uid);
 	        $keys = array_keys($user[0]);
 	        // Create return array
 	        for ($i = 0;$i < sizeof($user[0]);$i++) {
@@ -1737,7 +2107,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 	*/
 	function isMale($user_uid){
 		//do the query
-		$res = $this->doDatabaseQuery("SELECT tx_cwtcommunityuser_sex FROM fe_users WHERE uid=$user_uid");
+		$res = $this->doDatabaseQuery("SELECT tx_cwtcommunityuser_sex FROM fe_users WHERE uid=".$user_uid);
 		if ($res[0]['tx_cwtcommunityuser_sex'] == "0") {
 		    return TRUE;
 		}
@@ -1804,7 +2174,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //NOT EXISTING
         else{
             //Do the query
-            $res = $this->doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_buddylist (pid, crdate, cruser_id, fe_users_uid, buddy_uid) VALUES (".$this->sysfolderList.", ".time().", ".$uid.", ".$uid.", ".$buddy_uid.")");
+            $res = $this -> doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_buddylist (pid, crdate, cruser_id, fe_users_uid, buddy_uid) VALUES (". $this -> sysfolderList .", ".time().", ".$uid.", ".$uid.", ".$buddy_uid.")");
         }
         return null;
     }
@@ -1838,7 +2208,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Init some vars
         $messages =  null;
         //Do the query
-        $messages = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.uid, tx_cwtcommunity_message.status, fe_users.username FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.cruser_id = fe_users.uid AND tx_cwtcommunity_message.fe_users_uid = $uid ORDER BY crdate DESC");
+        $messages = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.uid, tx_cwtcommunity_message.recipients_to, tx_cwtcommunity_message.status, fe_users.username, fe_users.name FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.cruser_id = fe_users.uid AND tx_cwtcommunity_message.fe_users_uid = $uid ORDER BY crdate DESC");
         //return
         return $messages;
     }
@@ -1854,7 +2224,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Init some vars
         $messages =  null;
         //Do the query
-        $messages = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.uid, tx_cwtcommunity_message.status, fe_users.username FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.cruser_id = fe_users.uid AND tx_cwtcommunity_message.fe_users_uid = $uid AND tx_cwtcommunity_message.status = 0 ORDER BY crdate DESC");
+        $messages = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.uid, tx_cwtcommunity_message.recipients_to, tx_cwtcommunity_message.status, fe_users.username, fe_users.name FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.cruser_id = fe_users.uid AND tx_cwtcommunity_message.fe_users_uid = $uid AND tx_cwtcommunity_message.status = 0 ORDER BY crdate DESC");
         //return
         return $messages;
     }
@@ -1871,8 +2241,27 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Init some vars
         $message =  null;
         //Do the query
-        $message = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.body, tx_cwtcommunity_message.status, tx_cwtcommunity_message.uid, fe_users.username FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.uid = $msg_uid AND tx_cwtcommunity_message.fe_users_uid = $uid AND tx_cwtcommunity_message.cruser_id = fe_users.uid ORDER BY crdate DESC");
+        $message = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.body, tx_cwtcommunity_message.status, tx_cwtcommunity_message.uid, tx_cwtcommunity_message.recipients_to, fe_users.username, fe_users.name FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.uid = $msg_uid AND tx_cwtcommunity_message.fe_users_uid = $uid AND tx_cwtcommunity_message.cruser_id = fe_users.uid ORDER BY crdate DESC");
         $message = $message[0];
+
+		//convert recipients_to into string of recipient-names
+        $temp_recipients_to = explode(',', $message['recipients_to']);
+        $temp_recipients_to_username = array();
+        $temp_recipients_to_name = array();
+        foreach ($temp_recipients_to as $curr_recipient) {
+   			if (substr($curr_recipient, 0, 1) == 'G') {
+				$groupinfo = $this -> doGetGroup(substr($curr_recipient, 1));
+				$temp_recipients_to_username[] = $groupinfo['title'];
+				$temp_recipients_to_name[] = $groupinfo['title'];
+			} else {
+				$userinfo = $this -> doGetUser($curr_recipient);
+				$temp_recipients_to_username[] = $userinfo['username'];
+				$temp_recipients_to_name[] = $userinfo['name'];
+			}
+        }
+        $message['recipients_to_username'] = implode(', ', $temp_recipients_to_username);
+        $message['recipients_to_name'] = implode(', ', $temp_recipients_to_name);
+
         //Now update the status
         $res = $this->doDatabaseUpdateQuery("UPDATE tx_cwtcommunity_message SET status = 1 WHERE uid = $msg_uid");
         //return
@@ -1897,15 +2286,51 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     *
     *  Sends a single message.
     *
-    *  @param $recipient_uid Recipient user id
+    *  @param $recipient_uid Recipient user id, or multiple separated by commas
     *  @param $uid Session user id
     *  @param $subject The subject of the mail
     *  @param $body The mail body.
     *  @return null
     */
     function doSendMessage($uid, $recipient_uid, $subject, $body){
-        //Do the query
-        $res = $this->doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_message (pid, crdate, fe_users_uid, cruser_id, subject, body, status) VALUES (".$this->sysfolderList.",".time().", ".$recipient_uid.", ".$uid.", '".$subject."', '".$body."', 0)");
+      	$recipients = explode(',', $recipient_uid);
+      	$recipient_uids = array();
+      	$recipient_group_uids = array();
+      	foreach ($recipients as $curr_recipient) {
+        	// is this a group?
+        	if (substr($curr_recipient, 0, 1) == 'G') {
+        		$int_uid = (int) substr($curr_recipient, 1);
+        		if ( $int_uid > 0) {
+        			$recipient_group_uids[] = $int_uid;
+        		}
+        	} else {
+        		$int_uid = (int) $curr_recipient;
+        		if ( $int_uid > 0) {
+        			$recipient_uids[] = $int_uid;
+        		}
+        	}
+      	}
+		// resolve group-uids
+		if (!empty($recipient_group_uids)) {
+			$res = $this->doDatabaseQuery("SELECT uid,usergroup FROM fe_users");
+			foreach($res as $curr_res) {
+				$usergroups = explode(',', $curr_res['usergroup']);
+				foreach ($recipient_group_uids as $curr_group_uid) {
+					if (in_array($curr_group_uid, $usergroups)) {
+						$recipient_uids[] = (int) $curr_res['uid'];
+					}
+				}
+			}
+		}
+		// send only one message per user
+      	$recipient_uids = array_unique($recipient_uids);
+		// don't send message to sender himself
+       	$recipient_uids = array_diff($recipient_uids, array($uid));
+
+		foreach ($recipient_uids as $curr_recipient_uid) {
+        	//Do the query
+        	$res = $this->doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_message (pid, crdate, recipients_to, fe_users_uid, cruser_id, subject, body, status) VALUES (".$this->sysfolderList.",".time().", '".mysql_escape_string($recipient_uid)."', ".$curr_recipient_uid.", ".$uid.", '".$subject."', '".$body."', 0)");
+       	}
         //return
         return $null;
     }

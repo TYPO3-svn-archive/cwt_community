@@ -10,6 +10,7 @@ CREATE TABLE tx_cwtcommunity_message (
 	deleted tinyint(4) unsigned DEFAULT '0' NOT NULL,
 	hidden tinyint(4) unsigned DEFAULT '0' NOT NULL,
 	fe_group int(11) DEFAULT '0' NOT NULL,
+	recipients_to blob NOT NULL,
 	fe_users_uid blob NOT NULL,
 	subject tinytext NOT NULL,
 	body text NOT NULL,

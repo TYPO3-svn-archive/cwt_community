@@ -24,22 +24,26 @@
 							</numIndex>							
 							<numIndex index="2">
 								<numIndex index="0">LLL:EXT:cwt_community/locallang_tca.php:cwt_community.pi_flexform.sheet_general_code.I.2</numIndex>
-								<numIndex index="1">GUESTBOOK</numIndex>
-							</numIndex>
+								<numIndex index="1">MESSAGES_RECIPIENTSEARCH</numIndex>
+							</numIndex>							
 							<numIndex index="3">
 								<numIndex index="0">LLL:EXT:cwt_community/locallang_tca.php:cwt_community.pi_flexform.sheet_general_code.I.3</numIndex>
-								<numIndex index="1">PROFILE</numIndex>
-							</numIndex>			
+								<numIndex index="1">GUESTBOOK</numIndex>
+							</numIndex>
 							<numIndex index="4">
 								<numIndex index="0">LLL:EXT:cwt_community/locallang_tca.php:cwt_community.pi_flexform.sheet_general_code.I.4</numIndex>
-								<numIndex index="1">PROFILE_EDIT</numIndex>
-							</numIndex>																		
+								<numIndex index="1">PROFILE</numIndex>
+							</numIndex>			
 							<numIndex index="5">
 								<numIndex index="0">LLL:EXT:cwt_community/locallang_tca.php:cwt_community.pi_flexform.sheet_general_code.I.5</numIndex>
-								<numIndex index="1">USERLIST</numIndex>
-							</numIndex>							
+								<numIndex index="1">PROFILE_EDIT</numIndex>
+							</numIndex>																		
 							<numIndex index="6">
 								<numIndex index="0">LLL:EXT:cwt_community/locallang_tca.php:cwt_community.pi_flexform.sheet_general_code.I.6</numIndex>
+								<numIndex index="1">USERLIST</numIndex>
+							</numIndex>							
+							<numIndex index="7">
+								<numIndex index="0">LLL:EXT:cwt_community/locallang_tca.php:cwt_community.pi_flexform.sheet_general_code.I.7</numIndex>
 								<numIndex index="1">BUDDYLIST</numIndex>
 							</numIndex>									
 						</items>
