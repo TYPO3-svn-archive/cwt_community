@@ -1,0 +1,69 @@
+
+################################################################
+# IMPORTANT !!!!
+# the plugin MUST have exactly the same name as the classname.
+# otherwise the $conf will not be filled with the values from
+# ext_typoscript_constants.txt and ext_typoscript_setup.txt!
+################################################################
+
+### Setup
+
+#Include the php class
+includeLibs.ts_cwt_community = EXT:cmw_community/pi1/class.tx_cwtcommunity_pi1.php
+
+plugin.tx_cwtcommunity_pi1 > 
+plugin.tx_cwtcommunity_pi1 = USER_INT
+plugin.tx_cwtcommunity_pi1{
+	
+	code.field = select_key
+
+	# Start the php script
+	userFunc = tx_cwtcommunity_pi1->main
+
+	#Define Template file
+	template_guestbook = {$plugin.cwt_community.file.template_guestbook}
+	template_profile = {$plugin.cwt_community.file.template_profile}
+	template_search = {$plugin.cwt_community.file.template_search}
+	template_buddylist = {$plugin.cwt_community.file.template_buddylist}
+	template_userlist = {$plugin.cwt_community.file.template_userlist}
+	template_messages = {$plugin.cwt_community.file.template_messages}
+	template_welcome = {$plugin.cwt_community.file.template_welcome}
+
+	#Define Icons
+	icon_userlist_status_online = {$plugin.cwt_community.file.icon_userlist_status_online}
+	icon_userlist_status_offline = {$plugin.cwt_community.file.icon_userlist_status_offline}
+	icon_userlist_addbuddy = {$plugin.cwt_community.file.icon_userlist_addbuddy}
+	icon_userlist_male = {$plugin.cwt_community.file.icon_userlist_male}
+	icon_userlist_female = {$plugin.cwt_community.file.icon_userlist_female}
+	icon_guestbook_delete = {$plugin.cwt_community.file.icon_guestbook_delete}	
+	icon_messages_new = {$plugin.cwt_community.file.icon_messages_new}	
+	icon_messages_unread = {$plugin.cwt_community.file.icon_messages_unread}	
+	icon_messages_read = {$plugin.cwt_community.file.icon_messages_read}
+	icon_messages_answer = {$plugin.cwt_community.file.icon_messages_answer}
+	icon_welcome_newmail = {$plugin.cwt_community.file.icon_welcome_newmail}	
+	icon_welcome_nonewmail = {$plugin.cwt_community.file.icon_welcome_nonewmail}	
+	
+	#Define configuration vars
+	pid_profile = {$plugin.cwt_community.pid.profile}
+	pid_buddylist = {$plugin.cwt_community.pid.buddylist}
+	pid_messages = {$plugin.cwt_community.pid.messages}
+	pid_icons = {$plugin.cwt_community.pid.icons}
+	iconReplacement = {$plugin.cwt_community.iconReplacement}
+	maxIdleTime = {$plugin.cwt_community.maxIdleTime}
+
+	#Configure Image popup
+	imagePopup{
+	  file.maxW = 150
+	  wrap = | 
+	  imageLinkWrap = 1
+	  imageLinkWrap {
+	    enable = 1
+	    bodyTag = <body>
+	    wrap = <a href="javascript:close()">|</a>
+	    width = 400
+	    JSwindow = 1
+	    JSwindow.newWindow = 1
+	    JSwindow.expand = 17,20
+	  }
+	}
+}

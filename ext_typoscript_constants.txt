@@ -1,0 +1,86 @@
+##########################################################################################################
+### Constants
+##########################################################################################################
+
+plugin.cwt_community {
+
+  ##########################################################################################################
+  ## TEMPLATE FILES
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Guestbook HTML Template File: This is the HTML Template file, which will be used for displaying records. 
+  file.template_guestbook = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_guestbook.tmpl
+
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Profile HTML Template File: This is the HTML Template file, which will be used for displaying records. 
+  file.template_profile = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_profile.tmpl
+
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Search HTML Template File: This is the HTML Template file, which will be used for displaying records. 
+  file.template_search = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_search.tmpl
+
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Buddylist HTML Template File: This is the HTML Template file, which will be used for displaying records. 
+  file.template_buddylist = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_buddylist.tmpl
+
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Userlist HTML Template File: This is the HTML Template file, which will be used for displaying records. 
+  file.template_userlist = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_userlist.tmpl
+
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Messages HTML Template File: This is the HTML Template file, which will be used for displaying records. 
+  file.template_messages = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_messages.tmpl
+
+  # cat=PLUGIN.CWT Community - Templates/file; type=file[html,htm,tmpl,txt]; label= Welcome HTML Template File: This template is intended for the users welcome page, after he has logged in.
+  file.template_welcome = EXT:cwt_community/pi1/tx_cwtcommunity_pi1_welcome.tmpl
+
+  ## PICTURES
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Userlist: Status -> Online.
+  file.icon_userlist_status_online = EXT:cwt_community/pi1/userlist_status_online.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Userlist: Status -> Offline.
+  file.icon_userlist_status_offline = EXT:cwt_community/pi1/userlist_status_offline.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Userlist: Add buddy.
+  file.icon_userlist_addbuddy = EXT:cwt_community/pi1/userlist_addbuddy.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Userlist: Male icon
+  file.icon_userlist_male = EXT:cwt_community/pi1/userlist_male.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Userlist: Female icon
+  file.icon_userlist_female = EXT:cwt_community/pi1/userlist_female.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Guestbook: Icon used for deletion of items.
+  file.icon_guestbook_delete = EXT:cwt_community/pi1/guestbook_delete.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for new mail.
+  file.icon_messages_new = EXT:cwt_community/pi1/messages_new.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for unread mail.
+  file.icon_messages_unread = EXT:cwt_community/pi1/messages_unread.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for readed mail.
+  file.icon_messages_read = EXT:cwt_community/pi1/messages_read.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Messages: Icon for answering mail.
+  file.icon_messages_answer = EXT:cwt_community/pi1/messages_answer.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Welcome: Icon indicating new mail.
+  file.icon_welcome_newmail = EXT:cwt_community/pi1/welcome_newmail.gif
+
+  # cat=PLUGIN.CWT Community - Icons/file; type=file[gif]; label= Welcome: Icon indicating new mail.
+  file.icon_welcome_nonewmail = EXT:cwt_community/pi1/welcome_nonewmail.gif
+
+  ##########################################################################################################
+  ## CONFIGURATION VARS
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Profile: PID of the page containing the 'PROFILE' plugin
+  pid.profile = 78
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Buddylist: PID of the page containing the 'BUDDYLIST' plugin
+  pid.buddylist = 79
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Messages: PID of the page containing the 'MESSAGES' plugin
+  pid.messages = 80
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Icon Replacement: PID of Sysfolder, where the icon records (for replacement of strings) reside.
+  pid.icons = 81
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=boolean; label= Icon Replacement: Parse for strings and replace them?
+  iconReplacement = 1
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Maximum idle time: After this maximum amount of idle time (in minutes) a fe_user is considered as logged out.
+  maxIdleTime = 15
+}
