@@ -41,6 +41,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     var $uploadDir = "uploads/tx_cwtcommunity/"; //Upload directory for fe_users' images
     var $iconReplacement = true; //Determines if the text shall be parsed for  icon replacement.
     var $siteUrl = ""; //URL-prefix of the website - e.g. "http://www.example.com/"
+    var $session_user_uid = null; //UID of currently logged in user
     var $newmailNotificationSender = ""; //Sender of email-address of new-mail-notification emails; empty string = functionality NOT available
     var $newmailNotificationSubject = ""; //Subject of new-mail-notification email
 	var $flexform = null; //Contains the flexform configuration for the plugin.
@@ -88,6 +89,11 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 			t3lib_div::print_array($this->flexform);			
 			echo "<br>";
         }
+        
+        /*
+        * MAKE SESSION_USER_ID AVAILABLE
+        */
+        $this->session_user_uid = $this->doGetLoggedInUserUID();
 
         /*
         * INIT ICON REPLACEMENT
@@ -131,21 +137,17 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 				$content .= htmlspecialchars($this->pi_getLL('CWT_CODE_ERRMSG'));
 			}
             elseif ($CODE == "WELCOME")	{
-                //Get the user id
-                $session_user_uid = $this->doGetLoggedInUserUID();
                 // Read the file
                 $this -> orig_templateCode = $this -> cObj -> fileResource($conf["template_welcome"]);
                 //Get the user information
-                $user_info = $this->doGetUserInfo($session_user_uid);
+                $user_info = $this->doGetUserInfo($this->session_user_uid);
                 //Get the users new messages
-                $messages = $this->doGetNewMessages($session_user_uid);
+                $messages = $this->doGetNewMessages($this->session_user_uid);
                 $count = sizeof($messages);
                 //Generate the view
                 $content .= $this->getViewWelcome($user_info, $count);
             }
             elseif ($CODE == "MESSAGES") {
-                //Get the user id
-                $session_user_uid = $this->doGetLoggedInUserUID();
                 // Read the file
                 $this -> orig_templateCode = $this -> cObj -> fileResource($conf["template_messages"]);
                 //Get action
@@ -157,7 +159,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                 //Decide what to do
                 if ($action == null || $action == "getviewmessages" || $cancelPressed != null){
                     //Get the model
-                    $messages = $this->doGetMessages($session_user_uid);
+                    $messages = $this->doGetMessages($this->session_user_uid);
                     //Generate the view
                     $content .= $this->getViewMessages($messages);
                 }
@@ -167,7 +169,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                     //Delete the message
                     $res = $this->doDeleteMessage($msg_uid);
                     //Get the model
-                    $messages = $this->doGetMessages($session_user_uid);
+                    $messages = $this->doGetMessages($this->session_user_uid);
                     //Generate the view
                     $content .= $this->getViewMessages($messages);
                 }
@@ -186,13 +188,13 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                             //Everything ok, send the msg
                            if ($subject != null && $body != null && $recipient_uid != null){
                                //Send msg
-                               $res = $this->doSendMessage($session_user_uid, $recipient_uid, $subject, $body);
+                               $res = $this->doSendMessage($this->session_user_uid, $recipient_uid, $subject, $body);
                                //Display result view
-                               $content .= $this->getViewMessagesNewResult($session_user_uid, $recipient_uid);
+                               $content .= $this->getViewMessagesNewResult($this->session_user_uid, $recipient_uid);
                            }
                            //Not okay...display new view
                            else{
-                                $content .= $this->getViewMessagesNew($session_user_uid, $recipient_uid, null);
+                                $content .= $this->getViewMessagesNew($this->session_user_uid, $recipient_uid, null);
                            }
                         }
                         //NO post vars
@@ -202,7 +204,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                              //User wants to answer
                              if ($answer_uid != null) {
                                 //Get the message from database
-                                $query = $this->doGetMessagesSingle($session_user_uid, $answer_uid);
+                                $query = $this->doGetMessagesSingle($this->session_user_uid, $answer_uid);
                                 //Get the subject, of mail to answer
 								$subject = htmlspecialchars($this->pi_getLL('CWT_REPLY_ABBREV')." ".$query["subject"]);
 
@@ -210,36 +212,32 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                                 $body = " \n-------------------------\n".$query["body"];
                              }
                              //Generate the view
-                             $content .= $this->getViewMessagesNew($session_user_uid, $recipient_uid, $subject, $body);
+                             $content .= $this->getViewMessagesNew($this->session_user_uid, $recipient_uid, $subject, $body);
                         }
                 }
                 elseif ($action == "getviewmessagessingle"){
                     //Get the msg uid
                     $msg_uid = t3lib_div::GPvar("msg_uid");
                     //Get the model
-                    $message = $this->doGetMessagesSingle($session_user_uid, $msg_uid);
+                    $message = $this->doGetMessagesSingle($this->session_user_uid, $msg_uid);
 					if ($message !== false)
 					{
 						//Generate the view
-	                    $content .= $this->getViewMessagesSingle($session_user_uid, $message);
+	                    $content .= $this->getViewMessagesSingle($this->session_user_uid, $message);
 					} else {
 	                    //Get the model
-                    	$messages = $this->doGetMessages($session_user_uid);
+                    	$messages = $this->doGetMessages($this->session_user_uid);
                     	//Generate the view
                     	$content .= $this->getViewMessages($messages);
 					}
                 }
             }
             elseif ($CODE == "MESSAGES_RECIPIENTSEARCH") {
-                //Get the user id
-                $session_user_uid = $this->doGetLoggedInUserUID();
                 // Read the file
                 $this -> orig_templateCode = $this -> cObj -> fileResource($conf["template_messages"]);
-				$content .= $this->getViewMessagesRecipientsearch($session_user_uid);
+				$content .= $this->getViewMessagesRecipientsearch($this->session_user_uid);
             }
 			elseif ($CODE == "GUESTBOOK") {
-				//Now check, if the user views his own guestbook
-				$session_user_uid = $this->doGetLoggedInUserUID();
        	        // Read the file
    	            $this -> orig_templateCode = $this -> cObj -> fileResource($conf["template_guestbook"]);
                 //if no uid is given, then take session user uid
@@ -249,21 +247,21 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                 }
 
 				//FOR THE GUESTBOOK OWNER
-				if ($session_user_uid == $uid) {
+				if ($this->session_user_uid == $uid) {
 					//At first, check for POST vars
 					//User wants to activate guestbook
 					if ($this->piVars["open_guestbook"] != null) {
 						//so...open it ;-)
-					    $res = $this->doOpenGuestbook($session_user_uid);
+					    $res = $this->doOpenGuestbook($this->session_user_uid);
 					}
 					//User wants to close guestbook
 					elseif($this->piVars["lock_guestbook"] != null){
 						//so...lock it!
-						$res = $this->doLockGuestbook($session_user_uid);
+						$res = $this->doLockGuestbook($this->session_user_uid);
 					}
 
 					//Now check, if the user has enabled his gb
-					$status = $this->doGetGuestbookStatus($session_user_uid);
+					$status = $this->doGetGuestbookStatus($this->session_user_uid);
 					//Then ...Check, if guestbook is locked or open
 					if ($status == "0") {
 						$isLocked = false;
@@ -282,13 +280,13 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 					}
 					elseif ($action == "getviewguestbookdeleteall"){
 						//Delete the whole guestbook
-						$res = $this->doDeleteGuestbook($session_user_uid);
+						$res = $this->doDeleteGuestbook($this->session_user_uid);
 					}
 
         		    // Get the model -> guestbook
-  			        $guestbook = $this -> doGetGuestbook($session_user_uid);
+  			        $guestbook = $this -> doGetGuestbook($this->session_user_uid);
 					//Generate the view
-				    $content .= $this->getViewGuestbookLoggedIn($session_user_uid, $isLocked, $guestbook);
+				    $content .= $this->getViewGuestbookLoggedIn($this->session_user_uid, $isLocked, $guestbook);
 				}
 				//FOR OTHER USERS
 				else{
@@ -1169,18 +1167,16 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $subSub_1_alt = "RECORD_ALT";		
         $subSub_2 = "ADDITIONAL";
 
-        $session_user_uid = $this->doGetLoggedInUserUID();
-
 		$newmailnotify = t3lib_div::GPvar("newmailnotify");
 		if (isset($newmailnotify))
 		{
 			$this -> doDatabaseUpdateQuery("DELETE FROM tx_cwtcommunity_userflags ".
-									       "WHERE  fe_users_uid = ".$session_user_uid." ".
+									       "WHERE  fe_users_uid = ".$this->session_user_uid." ".
 										   "AND    flag = 'newmail_notification'");
 			if ($newmailnotify == 1)
 			{
 				$this -> doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_userflags ".
-										       "SET    fe_users_uid = ".$session_user_uid.", ".
+										       "SET    fe_users_uid = ".$this->session_user_uid.", ".
 											   "	   flag = 'newmail_notification'");
 			}
 		}
@@ -1209,7 +1205,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             $messages_answer_icon = $this -> cObj -> cImage($this -> conf["icon_messages_answer"], array("alttext" => $this->pi_getLL("icon_messages_answer")));
 			if (!empty($messages[$i]['recipients_to'])) {
 				$recipients_array = array_merge(array($messages[$i]['cruser_id']), explode(',', $messages[$i]['recipients_to']));
-				$recipients_array = array_diff($recipients_array, array($session_user_uid));
+				$recipients_array = array_diff($recipients_array, array($this->session_user_uid));
             	$recipients = implode(',', $recipients_array);
            	} else {
             	$recipients = $messages[$i]['cruser_id'];
@@ -1288,7 +1284,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 
 
 		$res = $this -> doDatabaseQuery("SELECT flag FROM tx_cwtcommunity_userflags ".
-									    "WHERE  fe_users_uid = ".$session_user_uid." ".
+									    "WHERE  fe_users_uid = ".$this->session_user_uid." ".
 									    "AND    flag = 'newmail_notification'");
 		// if user currently does not want to receive newmail-notifications
 		if (empty($res))
@@ -1327,8 +1323,6 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $subSub_1 = "RECORD";
         $subSub_2 = "ADDITIONAL";
         
-        $session_user_uid = $this->doGetLoggedInUserUID();
-
         // Get the html source between subpart markers from template file
         $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
 
@@ -1351,7 +1345,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $messages_answer_icon = $this -> cObj -> cImage($this -> conf["icon_messages_answer"], array("alttext" => $this->pi_getLL("icon_messages_answer")));
 		if (!empty($message['recipients_to'])) {
 			$recipients_array = array_merge(array($message['cruser_id']), explode(',', $message['recipients_to']));
-			$recipients_array = array_diff($recipients_array, array($session_user_uid));
+			$recipients_array = array_diff($recipients_array, array($this->session_user_uid));
         	$recipients = implode(',', $recipients_array);
        	} else {
         	$recipients = $message['cruser_id'];
@@ -1420,8 +1414,6 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         // Get the html source between subpart markers from template file
         $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
 
-        $session_user_uid = $this->doGetLoggedInUserUID();
-
         /*
         * HANDLE EDIT
         */
@@ -1487,7 +1479,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         	}
         }
 		// no email to self
-		$recipients = array_diff($recipients, array($session_user_uid));
+		$recipients = array_diff($recipients, array($this->session_user_uid));
     
         // Create Marker Array
         $markerArray = array();
@@ -1899,7 +1891,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     {
         // Fetch uids
         $temp = array();
-        $uids_online = $this -> doDatabaseQuery("SELECT fe_sessions.ses_userid FROM fe_users, fe_sessions WHERE fe_users.uid = fe_sessions.ses_userid AND (fe_users.username LIKE '" . $letter . "%' OR fe_users.username LIKE '" . strtoupper($letter) . "%')");
+        $uids_online = $this -> doDatabaseQuery("SELECT fe_sessions.ses_userid FROM fe_users, fe_sessions WHERE fe_users.uid = fe_sessions.ses_userid");
         for ($i = 0; $i < sizeof($uids_online);$i++) {
             $temp[] = $uids_online[$i]['ses_userid'];
         }
@@ -1960,7 +1952,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     */
     function doGetUserInfo($fe_users_uid = null)	{
         // Fetch user
-        $user_info = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = $fe_users_uid");
+        $user_info = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = ".$fe_users_uid);
         $temp = array();
         $keys = array_keys($user_info[0]);
         // Create return array
