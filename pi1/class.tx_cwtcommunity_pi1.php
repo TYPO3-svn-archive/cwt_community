@@ -1515,12 +1515,14 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 	*/
     function doGetUser($fe_users_uid = null)	{
         // Fetch user
-        $user = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = $fe_users_uid");
         $temp = array();
-        $keys = array_keys($user[0]);
-        // Create return array
-        for ($i = 0;$i < sizeof($user[0]);$i++) {
-            $temp[$keys[$i]] = $user[0][$keys[$i]];
+        if (!empty($fe_users_id)) {
+	        $user = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = $fe_users_uid");
+	        $keys = array_keys($user[0]);
+	        // Create return array
+	        for ($i = 0;$i < sizeof($user[0]);$i++) {
+	            $temp[$keys[$i]] = $user[0][$keys[$i]];
+	        }
         }
         // Return
         return $temp;
@@ -1772,11 +1774,13 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Get user
         $uid = $this->doGetLoggedInUserUID();
         $ses_id = $GLOBALS["TSFE"]->fe_user->id;
-        //Look for duplicate sessions
-        $ses = $this->doDatabaseQuery("SELECT ses_id FROM fe_sessions WHERE ses_userid = $uid");
-        if (sizeof($ses) > 1){
-           //Keep the most actual session, delete the rest
-           $this->doDatabaseUpdateQuery("DELETE FROM fe_sessions WHERE ses_userid = $uid AND ses_id != '$ses_id'");
+        if (!empty($uid)) {
+	        //Look for duplicate sessions
+	        $ses = $this->doDatabaseQuery("SELECT ses_id FROM fe_sessions WHERE ses_userid = $uid");
+	        if (sizeof($ses) > 1){
+	           //Keep the most actual session, delete the rest
+	           $this->doDatabaseUpdateQuery("DELETE FROM fe_sessions WHERE ses_userid = $uid AND ses_id != '$ses_id'");
+	        }
         }
         return;
     }
