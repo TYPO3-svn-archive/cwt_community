@@ -95,4 +95,13 @@ plugin.cwt_community {
 
   # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=int+; label= Maximum idle time: After this maximum amount of idle time (in minutes) a fe_user is considered as logged out.
   maxIdleTime = 15
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=string; label= Site URL: Prefix of typo-page-URLs; needed for creation of absolute URLs
+  siteUrl = http://www.example.com/
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=string; label= New-mail-notification sender: Sender-address of email (leave empty = functionality NOT available to users)
+  newmailNotification.sender = 
+
+  # cat=PLUGIN.CWT Community - Configuration vars/ctext/0; type=string; label= New-mail-notification subject: Subject line of email
+  newmailNotification.subject = You have new mail
 }

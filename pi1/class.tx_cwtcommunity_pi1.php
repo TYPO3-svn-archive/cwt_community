@@ -40,6 +40,9 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     var $sysfolderList = null; //Contains the 'Starting Point' PIDs
     var $uploadDir = "uploads/tx_cwtcommunity/"; //Upload directory for fe_users' images
     var $iconReplacement = true; //Determines if the text shall be parsed for  icon replacement.
+    var $siteUrl = ""; //URL-prefix of the website - e.g. "http://www.example.com/"
+    var $newmailNotificationSender = ""; //Sender of email-address of new-mail-notification emails; empty string = functionality NOT available
+    var $newmailNotificationSubject = ""; //Subject of new-mail-notification email
 	var $flexform = null; //Contains the flexform configuration for the plugin.
 
     /**
@@ -95,6 +98,17 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         else{
             $this->iconReplacement = false;
         }
+
+        /*
+        * INIT SITE URL
+        */
+        $this->siteUrl  = trim($conf["siteUrl"]);
+
+        /*
+        * INIT NEW MAIL NOTIFICATION
+        */
+        $this->newmailNotificationSender  = trim($conf["newmailNotificationSender"]);
+        $this->newmailNotificationSubject = trim($conf["newmailNotificationSubject"]);
 
         /*
         * INIT THE TEMPLATE
@@ -204,8 +218,16 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                     $msg_uid = t3lib_div::GPvar("msg_uid");
                     //Get the model
                     $message = $this->doGetMessagesSingle($session_user_uid, $msg_uid);
-                    //Generate the view
-                    $content .= $this->getViewMessagesSingle($session_user_uid, $message);
+					if ($message !== false)
+					{
+						//Generate the view
+	                    $content .= $this->getViewMessagesSingle($session_user_uid, $message);
+					} else {
+	                    //Get the model
+                    	$messages = $this->doGetMessages($session_user_uid);
+                    	//Generate the view
+                    	$content .= $this->getViewMessages($messages);
+					}
                 }
             }
             elseif ($CODE == "MESSAGES_RECIPIENTSEARCH") {
@@ -289,7 +311,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         		            if ($text != null && $submitPressed != null) {
     		                    // UID of fe user logged in
 		                        $user_uid = $this -> doGetLoggedInUserUID();
-	                        	// INsert into db
+	                        	// Insert into db
                     	    	$res = $this -> doInsertGuestbookData($user_uid, $text, $uid);
                 	    	    // Generate the view
             	    	        $content .= $this -> getViewGuestbookAddResult($uid);
@@ -1149,6 +1171,20 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 
         $session_user_uid = $this->doGetLoggedInUserUID();
 
+		$newmailnotify = t3lib_div::GPvar("newmailnotify");
+		if (isset($newmailnotify))
+		{
+			$this -> doDatabaseUpdateQuery("DELETE FROM tx_cwtcommunity_userflags ".
+									       "WHERE  fe_users_uid = ".$session_user_uid." ".
+										   "AND    flag = 'newmail_notification'");
+			if ($newmailnotify == 1)
+			{
+				$this -> doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_userflags ".
+										       "SET    fe_users_uid = ".$session_user_uid.", ".
+											   "	   flag = 'newmail_notification'");
+			}
+		}
+
         // Get the html source between subpart markers from template file
         $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
 
@@ -1249,6 +1285,23 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $markerArray["###LINK_TO_MESSAGESADD###"] = $cObj -> stdWrap($messages_add, "");
         $markerArray["###MESSAGESICON###"] = $cObj -> stdWrap($messages_icon, "");
 		$markerArray["###NEWMSG_TEXT###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_NEW')), "");
+
+
+		$res = $this -> doDatabaseQuery("SELECT flag FROM tx_cwtcommunity_userflags ".
+									    "WHERE  fe_users_uid = ".$session_user_uid." ".
+									    "AND    flag = 'newmail_notification'");
+		// if user currently does not want to receive newmail-notifications
+		if (empty($res))
+		{
+	        $notifications_link = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessages", "newmailnotify" => "1"));
+			$notifications_text = $this->pi_getLL('CWT_MESSAGES_NEWMAILNOTIFY_ACTIVATE');
+		} else {
+	        $notifications_link = $this -> pi_getPageLink($this -> conf['pid_messages'], "", array("action" => "getviewmessages", "newmailnotify" => "0"));
+			$notifications_text = $this->pi_getLL('CWT_MESSAGES_NEWMAILNOTIFY_DEACTIVATE');
+		}
+        $markerArray["###LINK_TOGGLE_NEWMAILNOTIFICATIONS###"] = $cObj -> stdWrap($notifications_link, "");
+        $markerArray["###NEWMAILNOTIFICATIONS_TEXT###"] = $cObj -> stdWrap(htmlspecialchars($notifications_text), "");
+
         $templateCode = $cObj -> substituteMarkerArray($templateCode, $markerArray);
 
         // Return the generated content
@@ -2235,13 +2288,18 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     *
     *  @param $uid session users uid
     *  @param $msg_uid uid of a message from database.
-    *  @return $message
+    *  @return $message Message fetched from db - or "false" in case the message could not be fetched
     */
     function doGetMessagesSingle($uid, $msg_uid){
         //Init some vars
         $message =  null;
         //Do the query
         $message = $this->doDatabaseQuery("SELECT tx_cwtcommunity_message.cruser_id, tx_cwtcommunity_message.crdate, tx_cwtcommunity_message.subject, tx_cwtcommunity_message.body, tx_cwtcommunity_message.status, tx_cwtcommunity_message.uid, tx_cwtcommunity_message.recipients_to, fe_users.username, fe_users.name FROM tx_cwtcommunity_message, fe_users WHERE tx_cwtcommunity_message.uid = $msg_uid AND tx_cwtcommunity_message.fe_users_uid = $uid AND tx_cwtcommunity_message.cruser_id = fe_users.uid ORDER BY crdate DESC");
+		// if we didn't find a message in the DB
+		if (empty($message))
+		{
+			return false;
+		}
         $message = $message[0];
 
 		//convert recipients_to into string of recipient-names
@@ -2330,7 +2388,53 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 		foreach ($recipient_uids as $curr_recipient_uid) {
         	//Do the query
         	$res = $this->doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_message (pid, crdate, recipients_to, fe_users_uid, cruser_id, subject, body, status) VALUES (".$this->sysfolderList.",".time().", '".mysql_escape_string($recipient_uid)."', ".$curr_recipient_uid.", ".$uid.", '".$subject."', '".$body."', 0)");
+
+	       	if (!empty($this->newmailNotificationSender))
+	       	{
+	       		$msg_uid = mysql_insert_id();
+	       		$message = array("uid" => $msg_uid, "subject" => $subject, "body" => $body);
+				$this->doSendNewMailNotification($curr_recipient_uid, $message);
+			}
        	}
+        //return
+        return $null;
+    }
+
+    /* doSendMessage($uid, $recipient_uid, $subject, $body)
+    *
+    *  Sends a new-mail-notification email.
+    *
+    *  @param $recipient_uid Recipient user id
+    *  @param $message Array with information on message that was just sent (uid, subject, body) ---to be extended---
+    *  @return null
+    */
+    function doSendNewMailNotification($recipient_uid, $message){
+        $cObj = $this -> cObj; //Holds a typo content object
+        $templateCode = null; //Hold the template source code.
+        $conf["subpartMarker"] = "NEWMAIL_NOTIFICATION"; //Holds a subpart marker.
+
+		$user = $this -> doGetUser($recipient_uid);
+		if (!empty($user['email']))
+		{
+			$res = $this -> doDatabaseQuery("SELECT flag FROM tx_cwtcommunity_userflags ".
+										    "WHERE  fe_users_uid = ".$recipient_uid." ".
+										    "AND    flag = 'newmail_notification'");
+			// if user wants to receive newmail-notifications
+			if (!empty($res))
+			{
+		        // Get the html source between subpart markers from template file
+		        $templateCode = $cObj -> getSubpart($this -> orig_templateCode, "###" . $conf["subpartMarker"] . "###");
+		
+		        // Create Marker Array
+		        $markerArray = array();
+			    $markerArray["###LINK_MESSAGE###"] = $this -> siteUrl . $this -> pi_getPageLink($GLOBALS['TSFE']->id, "", array("action" => "getviewmessagessingle", "msg_uid" => $message['uid']));
+		
+				$body = $cObj -> substituteMarkerArray($templateCode, $markerArray);
+	
+				mail($user['email'], $this -> newmailNotificationSubject, $body,
+		     		 "From: ".$this -> newmailNotificationSender);
+			}
+		}
         //return
         return $null;
     }

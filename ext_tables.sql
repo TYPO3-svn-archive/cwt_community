@@ -104,6 +104,8 @@ CREATE TABLE tx_cwtcommunity_guestbook_data (
 	KEY parent (pid)
 );
 
+
+
 #
 # Table structure for table 'tx_cwtcommunity_icons'
 #
@@ -120,4 +122,16 @@ CREATE TABLE tx_cwtcommunity_icons (
 
     PRIMARY KEY (uid),
     KEY parent (pid)
+);
+
+
+
+#
+# Table structure for table 'tx_cwtcommunity_userflags'
+#
+CREATE TABLE tx_cwtcommunity_userflags (
+	fe_users_uid int(11) unsigned DEFAULT '0' NOT NULL,
+	flag varchar(40) DEFAULT '' NOT NULL,
+	
+	PRIMARY KEY (fe_users_uid,flag)
 );
