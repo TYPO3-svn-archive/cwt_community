@@ -49,9 +49,15 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $this -> conf = $conf;
         $this -> pi_setPiVarDefaults();
         $this -> pi_loadLL();
-		//Init config flexform
-		$this->pi_initPIflexForm();
-		$this->flexform = $this->cObj->data['pi_flexform'];
+		
+		//Init config flexform, the flexform config can now be overwritten by extensions calling a cwt_community object.
+		if (!$this->conf['tsFlex']) {
+    		$this->pi_initPIflexForm();
+    		$this->flexform = $this->cObj->data['pi_flexform'];       
+		}
+		else {
+    		$this->flexform = $this->conf['tsFlex'];
+    	}
         
 		// Debugging
         if ($this -> debug) {
