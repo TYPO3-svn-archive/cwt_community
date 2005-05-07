@@ -64,7 +64,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             t3lib_div :: print_array($conf);
             // Information about fe_user
             // t3lib_div::print_array(get_object_vars($GLOBALS["TSFE"]->fe_user));
-             t3lib_div::print_array(get_object_vars($GLOBALS['TSFE']));
+            // t3lib_div::print_array(get_object_vars($GLOBALS['TSFE']));
         }
         
 		// Disable Caching
@@ -336,6 +336,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
                 }
                 // Get the model -> user
                 $user = $this->doGetUser($uid);
+
                 // Generate the view
                 $content .= $this -> getViewProfile($user);
             }
@@ -561,7 +562,9 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $subpartContent = null;
         // Create the row
         $row = null;
-        $row .= $this -> pi_linkToPage("Alle", $GLOBALS['TSFE'] -> id, "", array("action" => "getviewuserlist")) . "&nbsp|&nbsp;";
+        if ($this->conf['disableUserListAll'] != 1) {
+        	$row .= $this -> pi_linkToPage("Alle", $GLOBALS['TSFE'] -> id, "", array("action" => "getviewuserlist")) . "&nbsp|&nbsp;";
+        }
         $row .= $this -> pi_linkToPage("A", $GLOBALS['TSFE'] -> id, "", array("action" => "getviewuserlist", "letter" => "a")) . "&nbsp|&nbsp;";
         $row .= $this -> pi_linkToPage("B", $GLOBALS['TSFE'] -> id, "", array("action" => "getviewuserlist", "letter" => "b")) . "&nbsp|&nbsp;";
         $row .= $this -> pi_linkToPage("C", $GLOBALS['TSFE'] -> id, "", array("action" => "getviewuserlist", "letter" => "c")) . "&nbsp|&nbsp;";
@@ -1276,7 +1279,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 		$markerArray["###SUBJECT_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_SUBJECT')), ""); # mher
         $markerArray["###SUBJECT###"] = $cObj -> stdWrap($message['subject'], "");
 		$markerArray["###BODY_LABEL###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_BODY')), ""); # mher
-        $markerArray["###BODY###"] = $cObj -> stdWrap($this->parseIcons($message['body']), "");
+        $markerArray["###BODY###"] = $cObj -> stdWrap($this->parseIcons(nl2br($message['body'])), "");
 		$markerArray["###BACK###"] = $cObj->stdWrap(htmlspecialchars($this->pi_getLL('CWT_MESSAGES_BACK')), ""); # mher
         $markerArray["###LINK_TO_PROFILE###"] = $cObj -> stdWrap($linkToProfile, "");
         $markerArray["###LINK_TO_DELETE_ITEM###"] = $cObj -> stdWrap($linkToDeleteItem, "");
@@ -1479,9 +1482,13 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
 	*  @param $letter Only displays usernames with this as first letter.
 	*  @return Array of tx_cwtcommunity_pi1_user records.
 	*/
-    function doGetUserlist($letter)
-    {
-        // fetch all by default
+    function doGetUserlist($letter){
+    	//If a default letter is configured, it is selected here
+		if ($letter == null && $this->conf['defaultUserListLetter']) {
+		    $letter = $this->conf['defaultUserListLetter'];
+		}        
+        
+        // fetch all by default        
         if ($letter == null) {
             // Fetch users
             $users = $this -> doDatabaseQuery("SELECT uid, username, name, city, country, www FROM fe_users WHERE pid = ".$this->sysfolderList." AND NOT deleted=1 AND NOT disable=1 ORDER BY username ASC");
@@ -1522,7 +1529,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     function doGetUser($fe_users_uid = null)	{
         // Fetch user
         $temp = array();
-        if (!empty($fe_users_id)) {
+        if (!empty($fe_users_uid)) {
 	        $user = $this -> doDatabaseQuery("SELECT * FROM fe_users WHERE uid = $fe_users_uid");
 	        $keys = array_keys($user[0]);
 	        // Create return array
