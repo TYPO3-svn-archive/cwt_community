@@ -28,7 +28,7 @@
  */
 
 require_once(PATH_tslib."class.tslib_pibase.php");
-include_once(PATH_typo3conf."ext/cwt_feedit/pi1/class.tx_cwtfeedit_pi1.php");
+include_once(t3lib_extMgm::extPath('cwt_feedit').'pi1/class.tx_cwtfeedit_pi1.php');
 
 class tx_cwtcommunity_pi1 extends tslib_pibase {
     var $prefixId = "tx_cwtcommunity_pi1"; // Same as class name
