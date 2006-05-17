@@ -24,10 +24,10 @@
 /**
  * Plugin 'CWT Community' for the 'cwt_community' extension.
  *
- * @author sebastian <s.faulhaber@web-sol.de>
+ * @author Sebastian Faulhaber <sebastian.faulhaber@gmx.de>
  */
 
-require_once(PATH_tslib."class.tslib_pibase.php");
+require_once(PATH_tslib.'class.tslib_pibase.php');
 include_once(t3lib_extMgm::extPath('cwt_feedit').'pi1/class.tx_cwtfeedit_pi1.php');
 
 class tx_cwtcommunity_pi1 extends tslib_pibase {
@@ -736,7 +736,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             // Create Marker Array
             $markerArray = array();
             $markerArray["###USERNAME###"] = $cObj -> stdWrap($guestbook[$i]['username'], "");
-            $markerArray["###SEX###"] = $this->doGetSexIcon($guestbook[$i]['uid']);			
+            $markerArray["###SEX###"] = $this->doGetSexIcon($guestbook[$i]['cruser_id']);			
             $markerArray["###CREATION_DATE###"] = $cObj -> stdWrap($creationDate, "");
             $markerArray["###CREATION_TIME###"] = $cObj -> stdWrap($creationTime, "");
             $markerArray["###TEXT###"] = $cObj -> stdWrap($this->parseIcons($guestbook[$i]['text']), "");
@@ -1096,7 +1096,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             // Create Marker Array
             $markerArray = array();
             $markerArray["###USERNAME###"] = $cObj -> stdWrap($buddylist[$i]['username'], "");
-	        $markerArray["###SEX###"] = $this->doGetSexIcon($buddylist[$i]['uid']);					
+	        $markerArray["###SEX###"] = $this->doGetSexIcon($buddylist[$i]['buddy_uid']);					
             $markerArray["###STATUS###"] = $status;
             $markerArray["###LINK_TO_PROFILE###"] = $cObj -> stdWrap($linkToProfile, "");
             $markerArray["###LINK_TO_DELETE_ITEM###"] = $cObj -> stdWrap($linkToDeleteItem, "");
@@ -1184,7 +1184,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
             // Create Marker Array
             $markerArray = array();
             $markerArray["###USERNAME###"] = $cObj -> stdWrap($messages[$i]['username'], "");
-            $markerArray["###SEX###"] = $this->doGetSexIcon($messages[$i]['uid']);			
+            $markerArray["###SEX###"] = $this->doGetSexIcon($messages[$i]['cruser_id']);			
             $markerArray["###DATE###"] = $cObj -> stdWrap(date("d.m.Y", $messages[$i]['crdate']), "");
             $markerArray["###SUBJECT###"] = $cObj -> stdWrap($messages[$i]['subject'], "");
             $markerArray["###STATUS_ICON###"] = $cObj -> stdWrap($status_icon, "");
@@ -1593,7 +1593,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         $crdate = time(); 
         // Insert entry into db
         $res = $this -> doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_guestbook_data (pid, guestbook_uid, text,cruser_id, crdate) VALUES (" . $this -> sysfolderList . ", $guestbookUID, '$text', $cruser_id, $crdate)");
-        return $null;
+        return null;
     } 
 
     /* doGetLoggedInUserUID()
@@ -1903,7 +1903,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Do the query
         $res = $this->doDatabaseUpdateQuery("DELETE FROM tx_cwtcommunity_message WHERE uid = $msg_uid");
         //return
-        return $null;
+        return null;
     }
 
     /* doSendMessage($uid, $recipient_uid, $subject, $body)
@@ -1920,7 +1920,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         //Do the query
         $res = $this->doDatabaseUpdateQuery("INSERT INTO tx_cwtcommunity_message (pid, crdate, fe_users_uid, cruser_id, subject, body, status) VALUES (".$this->sysfolderList.",".time().", ".$recipient_uid.", ".$uid.", '".$subject."', '".$body."', 0)");
         //return
-        return $null;
+        return null;
     }
 
     /* parseIcons($textToParse)
@@ -1986,7 +1986,7 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
         return $content;
     }
 
-    /* doDatabaseQuery($query)
+    /** doDatabaseQuery($query)
 	*
 	*  This function runs queries on the typo3 database and returns the
 	*  result set in an associative array e.g. $return[0]['myAttribute'].
@@ -1999,23 +1999,25 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     function doDatabaseQuery($query)
     {
         // Do the query
-        $res = mysql(TYPO3_db, $query);
+        $res = $GLOBALS['TYPO3_DB']->sql(TYPO3_db, $query);
         // Preparing result set
         $rows = array();
-        while ($row = mysql_fetch_assoc($res)) {
+        while ($row = $GLOBALS['TYPO3_DB']->sql_fetch_assoc($res)) {
             $rows[] = $row;
         }
         // Debugging
         if ($this -> debug) {
             echo "Query: $query<br>";
             t3lib_div::print_array($rows);
+            echo "mysql_error: ";
+			echo mysql_error();
             echo "<br>";
         }
         // Return the array
         return $rows;
     }
 
-    /* doDatabaseUpdateQuery($query)
+    /** doDatabaseUpdateQuery($query)
 	*
 	*  [Description]
 	*  @param	string	Database query, which will be executed. e.g. 'UPDATE myTable SET myAttribute=myValue WHERE...'
@@ -2024,10 +2026,12 @@ class tx_cwtcommunity_pi1 extends tslib_pibase {
     function doDatabaseUpdateQuery($query)
     {
         // Do the query
-        $res = mysql(TYPO3_db, $query);
+        $res = $GLOBALS['TYPO3_DB']->sql(TYPO3_db, $query);
         // Debugging
         if ($this -> debug) {
             echo "Query: $query<br>";
+            echo "mysql_error: ";
+			echo mysql_error();            
             echo "<br>";
         }
         // Return the array
